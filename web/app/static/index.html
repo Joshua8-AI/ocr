@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Web App</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <a href="https://joshua8.ai" target="_blank" rel="noopener" class="brand-link">
+        <img src="/static/logo.jpg" alt="joshua8.ai" class="brand-logo">
+        <span class="brand-name">joshua8.ai</span>
+    </a>
+    <h1>OCR Document Processor</h1>
+    <p class="subtitle">Upload documents to extract text using AI vision models or traditional OCR.
+        Choose an output format and one or more models, then drag and drop your files.
+        Select multiple models to compare results side by side.
+        Your job history is tied to this browser session &mdash; keep this tab open to track progress and download results.
+        All uploaded and output files are automatically deleted after 36 hours.</p>
+
+    <div class="upload-section" id="upload-section">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="format">Output format</label>
+                <select id="format">
+                    <option value="markdown">Markdown</option>
+                    <option value="plaintext">Plain text</option>
+                    <option value="searchable_pdf">Searchable PDF</option>
+                    <option value="docx">DOCX (Word)</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>OCR Model</label>
+                <div id="model-checkboxes" class="model-checks"></div>
+                <div class="model-scale">&larr; fast &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash; accurate &rarr;</div>
+            </div>
+        </div>
+
+        <div class="drop-zone" id="drop-zone">
+            <p class="drop-zone-text">
+                <strong>Drop files here</strong> or click to browse<br>
+                <small>PDF, JPEG, PNG, TIFF, BMP, GIF, WebP, DJVU, PNM</small>
+            </p>
+            <input type="file" class="file-input" id="file-input" multiple
+                   accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.bmp,.gif,.webp,.djvu,.djv,.pnm,.pbm,.pgm,.ppm">
+        </div>
+
+        <ul class="file-list" id="file-list"></ul>
+        <p class="error-msg hidden" id="upload-error"></p>
+        <button class="btn btn-primary" id="submit-btn" disabled>Submit for OCR</button>
+    </div>
+
+    <div id="active-jobs"></div>
+
+    <div class="history-section" id="history-section">
+        <h2>Previous Jobs</h2>
+        <div id="history-list"></div>
+    </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
