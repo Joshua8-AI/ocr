@@ -374,6 +374,67 @@ input:focus, select:focus {
     margin-bottom: 0.35rem;
 }
 
+/* Benchmark table */
+.benchmark-section {
+    margin-top: 2.5rem;
+}
+
+.benchmark-section h2 {
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+}
+
+.bench-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.bench-table th, .bench-table td {
+    padding: 0.55rem 0.85rem;
+    text-align: right;
+    border: 1px solid var(--border);
+}
+
+.bench-table thead {
+    background: var(--bg);
+}
+
+.bench-table th {
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.bench-table td:first-child, .bench-table th:first-child {
+    text-align: left;
+    font-weight: 500;
+}
+
+.bench-table tbody tr:hover {
+    background: rgba(74, 108, 247, 0.04);
+}
+
+.bench-note {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+}
+
+.bench-note a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.bench-note a:hover {
+    text-decoration: underline;
+}
+
 .hidden { display: none; }
 
 @media (max-width: 600px) {

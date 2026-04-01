@@ -5,6 +5,7 @@ import shutil
 import time
 import uuid
 
+import httpx
 import redis
 from celery import Celery
 from fastapi import APIRouter, Cookie, Form, HTTPException, Query, Response, UploadFile
@@ -64,9 +65,21 @@ def _get_stats(data: dict) -> ModelStats | None:
 
 @router.get("/config")
 async def get_config() -> AppConfig:
-    return AppConfig(
-        models=list(settings.available_models.keys()),
-    )
+    available = []
+    for name, url in settings.available_models.items():
+        if url == "local":
+            available.append(name)
+            continue
+        # Health check the vLLM endpoint
+        try:
+            health_url = url.replace("/v1", "/health")
+            async with httpx.AsyncClient(timeout=2) as client:
+                resp = await client.get(health_url)
+                if resp.status_code == 200:
+                    available.append(name)
+        except Exception:
+            pass  # Model not available, skip it
+    return AppConfig(models=available)
 
 
 @router.post("/upload", status_code=202)

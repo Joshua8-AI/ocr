@@ -42,6 +42,7 @@ def process_pdf(
     model_name: str,
     vllm_url: str,
     is_native_ocr: bool = False,
+    text_prompt: str = "",
     progress_callback=None,
 ) -> tuple[list[str], int, int]:
     """Process a PDF with hybrid text extraction + OCR.
@@ -63,7 +64,7 @@ def process_pdf(
         else:
             img = render_page_to_image(page)
             img_b64 = prepare_image(img)
-            result = ocr_image(img_b64, model_name, vllm_url, is_native_ocr)
+            result = ocr_image(img_b64, model_name, vllm_url, is_native_ocr, text_prompt)
             text = result.text
             total_prompt += result.prompt_tokens
             total_completion += result.completion_tokens

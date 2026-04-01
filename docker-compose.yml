@@ -1,42 +1,4 @@
 services:
-  vllm:
-    image: vllm/vllm-openai:latest
-    command:
-      - "lightonai/LightOnOCR-2-1B"
-      - "--limit-mm-per-prompt"
-      - '{"image": 1}'
-      - "--mm-processor-cache-gb"
-      - "0"
-      - "--no-enable-prefix-caching"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8000"
-      - "--gpu-memory-utilization"
-      - "0.3"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ["0"]
-              capabilities: [gpu]
-    volumes:
-      - huggingface-cache:/root/.cache/huggingface
-    environment:
-      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
-    ports:
-      - "0.0.0.0:8100:8000"
-    networks:
-      - ocr-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 300s
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     networks:
@@ -61,8 +23,7 @@ services:
       - shared-data:/data
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - VLLM_URL=http://vllm:8000/v1
-      - OCR_MODELS=${OCR_MODELS:-LightOnOCR-2-1B=http://vllm:8000/v1}
+      - OCR_MODELS=${OCR_MODELS:-LightOnOCR-2-1B=http://192.168.30.210:8500/v1}
     networks:
       - ocr-net
     restart: unless-stopped
@@ -75,13 +36,10 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      vllm:
-        condition: service_healthy
     volumes:
       - shared-data:/data
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - VLLM_URL=http://vllm:8000/v1
     networks:
       - ocr-net
     restart: unless-stopped
@@ -94,6 +52,5 @@ networks:
         - subnet: 172.30.0.0/24
 
 volumes:
-  huggingface-cache:
   redis-data:
   shared-data:

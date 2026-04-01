@@ -28,11 +28,17 @@ UPLOAD_DIR = os.path.join(settings.data_dir, "uploads")
 RESULT_DIR = os.path.join(settings.data_dir, "results")
 
 MODEL_HF_IDS = {
-    "LightOnOCR-2-1B": "lightonai/LightOnOCR-2-1B",
+    "LightOnOCR-2-1B": "switzerchees/LightOnOCR-2-1B-NVFP4",
     "Qwen3.5-35B-A3B": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
+    "GLM-OCR": "zai-org/GLM-OCR",
 }
 
 NATIVE_OCR_MODELS = {"LightOnOCR-2-1B"}
+
+# Models that use a fixed text prompt instead of system prompt
+MODEL_PROMPTS = {
+    "GLM-OCR": "Text Recognition:",
+}
 
 # Models that run locally without vLLM
 LOCAL_MODELS = {"Tesseract"}
@@ -74,6 +80,7 @@ def process_ocr_job(
             vllm_url = settings.vllm_url
         model_id = _resolve_model_id(model)
         is_native_ocr = model in NATIVE_OCR_MODELS
+        text_prompt = MODEL_PROMPTS.get(model, "")
 
     result_dir = os.path.join(RESULT_DIR, job_id)
     os.makedirs(result_dir, exist_ok=True)
@@ -105,9 +112,9 @@ def process_ocr_job(
             if is_local:
                 page_texts, pt, ct = _process_local(job_id, filepath, ext, model)
             elif ext == ".pdf":
-                page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr)
+                page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt)
             else:
-                page_texts, pt, ct = _process_image_file(job_id, filepath, model_id, vllm_url, is_native_ocr)
+                page_texts, pt, ct = _process_image_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt)
 
             total_prompt_tokens += pt
             total_completion_tokens += ct
@@ -198,16 +205,16 @@ def _process_local(
 
 
 def _process_pdf_file(
-    job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool,
+    job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool, text_prompt: str = "",
 ) -> tuple[list[str], int, int]:
     def progress_cb(page_num: int, total_pages: int):
         _update_progress(job_id, current_page=page_num, total_pages=total_pages)
 
-    return process_pdf(filepath, model_id, vllm_url, is_native_ocr, progress_callback=progress_cb)
+    return process_pdf(filepath, model_id, vllm_url, is_native_ocr, text_prompt, progress_callback=progress_cb)
 
 
 def _process_image_file(
-    job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool,
+    job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool, text_prompt: str = "",
 ) -> tuple[list[str], int, int]:
     images = convert_to_images(filepath)
     total = len(images)
@@ -219,7 +226,7 @@ def _process_image_file(
     total_completion = 0
     for i, img in enumerate(images, 1):
         img_b64 = prepare_image(img)
-        result = ocr_image(img_b64, model_id, vllm_url, is_native_ocr)
+        result = ocr_image(img_b64, model_id, vllm_url, is_native_ocr, text_prompt)
         page_texts.append(result.text)
         total_prompt += result.prompt_tokens
         total_completion += result.completion_tokens

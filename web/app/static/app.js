@@ -31,8 +31,9 @@ async function loadConfig() {
     modelChecks.innerHTML = "";
     for (const m of appConfig.models) {
         const checked = m === defaultModel ? "checked" : "";
+        const display = m.split("-")[0];
         const lbl = document.createElement("label");
-        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m)}" ${checked}> ${escapeHtml(m)}`;
+        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m)}" ${checked}> ${escapeHtml(display)}`;
         modelChecks.appendChild(lbl);
     }
 }

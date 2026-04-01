@@ -19,10 +19,18 @@ class OcrResult:
     retry=tenacity.retry_if_exception_type((httpx.ConnectError, httpx.HTTPStatusError)),
     before_sleep=tenacity.before_sleep_log(None, 20),
 )
-def ocr_image(image_base64: str, model_name: str, vllm_url: str, is_native_ocr: bool = False) -> OcrResult:
+def ocr_image(
+    image_base64: str,
+    model_name: str,
+    vllm_url: str,
+    is_native_ocr: bool = False,
+    text_prompt: str = "",
+) -> OcrResult:
     """Send a base64-encoded image to vLLM for OCR. Returns text + token usage.
 
     is_native_ocr: if True, skip system prompt (model is a dedicated OCR model).
+    text_prompt: if set, use this as the user text content alongside the image
+                 (e.g. "Text Recognition:" for GLM-OCR).
     """
     OCR_SYSTEM_PROMPT = (
         "You are a strict OCR engine. Extract all visible text from the image exactly as it appears. "
@@ -34,21 +42,32 @@ def ocr_image(image_base64: str, model_name: str, vllm_url: str, is_native_ocr: 
         "If no text is visible, output only: [no text detected]"
     )
 
-    if is_native_ocr:
+    image_content = {
+        "type": "image_url",
+        "image_url": {"url": f"data:image/png;base64,{image_base64}"},
+    }
+
+    if text_prompt:
+        # Model-specific fixed prompt (e.g. GLM-OCR "Text Recognition:")
         messages = [
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        },
-                    }
+                    image_content,
+                    {"type": "text", "text": text_prompt},
                 ],
             }
         ]
+    elif is_native_ocr:
+        # Native OCR model — bare image, no prompt
+        messages = [
+            {
+                "role": "user",
+                "content": [image_content],
+            }
+        ]
     else:
+        # General VLM — system prompt + instruction
         messages = [
             {
                 "role": "system",
@@ -57,16 +76,8 @@ def ocr_image(image_base64: str, model_name: str, vllm_url: str, is_native_ocr: 
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": "Extract all text from this image exactly as written.",
-                    },
+                    image_content,
+                    {"type": "text", "text": "Extract all text from this image exactly as written."},
                 ],
             }
         ]

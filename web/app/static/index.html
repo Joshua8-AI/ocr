@@ -14,8 +14,9 @@
     </a>
     <h1>OCR Document Processor</h1>
     <p class="subtitle">Upload documents to extract text using AI vision models or traditional OCR.
-        Choose an output format and extraction method, then drag and drop your files.
+        Choose an output format and an OCR conversion model, then drag and drop your files.
         Your job history is tied to this browser session &mdash; keep this tab open to track progress and download results.
+        If you close the session, the results will disappear.
         All uploaded and output files are automatically deleted after 36 hours.</p>
 
     <div class="upload-section" id="upload-section">
@@ -57,6 +58,57 @@
     <div class="history-section" id="history-section">
         <h2>Previous Jobs</h2>
         <div id="history-list"></div>
+    </div>
+
+    <div class="benchmark-section">
+        <h2>Model Performance (OlmOCR-Bench)</h2>
+        <table class="bench-table">
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Overall</th>
+                    <th>Tables</th>
+                    <th>Text</th>
+                    <th>Math</th>
+                    <th>sec/page</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>LightOnOCR</td>
+                    <td><strong>76.4%</strong></td>
+                    <td><strong>88.7%</strong></td>
+                    <td>71.8%</td>
+                    <td><strong>89.2%</strong></td>
+                    <td>1.8s</td>
+                </tr>
+                <tr>
+                    <td>GLM-OCR</td>
+                    <td>75.4%</td>
+                    <td>43.5%</td>
+                    <td>67.1%</td>
+                    <td>80.8%</td>
+                    <td>1.4s</td>
+                </tr>
+                <tr>
+                    <td>Qwen3.5</td>
+                    <td>73.5%</td>
+                    <td>58.3%</td>
+                    <td><strong>75.5%</strong></td>
+                    <td>84.6%</td>
+                    <td>2.6s</td>
+                </tr>
+                <tr>
+                    <td>Tesseract</td>
+                    <td>34.4%</td>
+                    <td>0.4%</td>
+                    <td>41.1%</td>
+                    <td>0.0%</td>
+                    <td><strong>0.3s</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a> (1,403 documents, 7,010 tests)</p>
     </div>
 </div>
 <script src="/static/app.js"></script>
