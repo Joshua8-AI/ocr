@@ -31,6 +31,7 @@ MODEL_HF_IDS = {
     "LightOnOCR-2-1B": "switzerchees/LightOnOCR-2-1B-NVFP4",
     "Qwen3.5-35B-A3B": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
     "GLM-OCR": "zai-org/GLM-OCR",
+    "Qwen35-9B": "cyankiwi/Qwen3.5-9B-AWQ-4bit",
 }
 
 NATIVE_OCR_MODELS = {"LightOnOCR-2-1B"}

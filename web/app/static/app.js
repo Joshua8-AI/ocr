@@ -23,17 +23,16 @@ async function loadConfig() {
 
     // Determine which model to default-check
     const lastModel = localStorage.getItem("ocr_last_model");
-    // Default to Qwen, fall back to first non-Tesseract model if no history
-    const defaultModel = lastModel && appConfig.models.includes(lastModel)
+    const modelKeys = appConfig.models.map((m) => m.key);
+    const defaultModel = lastModel && modelKeys.includes(lastModel)
         ? lastModel
-        : appConfig.models.find((m) => m.startsWith("Qwen")) || appConfig.models.find((m) => m !== "Tesseract") || appConfig.models[0] || "";
+        : modelKeys.find((k) => k.startsWith("Qwen")) || modelKeys.find((k) => k !== "Tesseract") || modelKeys[0] || "";
 
     modelChecks.innerHTML = "";
     for (const m of appConfig.models) {
-        const checked = m === defaultModel ? "checked" : "";
-        const display = m.split("-")[0];
+        const checked = m.key === defaultModel ? "checked" : "";
         const lbl = document.createElement("label");
-        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m)}" ${checked}> ${escapeHtml(display)}`;
+        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m.key)}" ${checked}> ${escapeHtml(m.display)}`;
         modelChecks.appendChild(lbl);
     }
 }

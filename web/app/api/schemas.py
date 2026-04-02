@@ -10,8 +10,13 @@ class OutputFormat(str, Enum):
     docx = "docx"
 
 
+class ModelInfo(BaseModel):
+    key: str
+    display: str
+
+
 class AppConfig(BaseModel):
-    models: list[str]
+    models: list[ModelInfo]
 
 
 class UploadResponse(BaseModel):

@@ -14,11 +14,12 @@ from app.api.schemas import (
     AppConfig,
     JobProgress,
     JobSummary,
+    ModelInfo,
     ModelStats,
     OutputFormat,
     UploadResponse,
 )
-from app.config import settings
+from app.config import DISPLAY_NAMES, settings
 from app.validation.file_validator import (
     FileValidationError,
     validate_file_extension,
@@ -68,17 +69,18 @@ async def get_config() -> AppConfig:
     available = []
     for name, url in settings.available_models.items():
         if url == "local":
-            available.append(name)
+            display = DISPLAY_NAMES.get(name, name)
+            available.append(ModelInfo(key=name, display=display))
             continue
-        # Health check the vLLM endpoint
         try:
             health_url = url.replace("/v1", "/health")
             async with httpx.AsyncClient(timeout=2) as client:
                 resp = await client.get(health_url)
                 if resp.status_code == 200:
-                    available.append(name)
+                    display = DISPLAY_NAMES.get(name, name)
+                    available.append(ModelInfo(key=name, display=display))
         except Exception:
-            pass  # Model not available, skip it
+            pass
     return AppConfig(models=available)
 
 

@@ -3,6 +3,14 @@ from pydantic_settings import BaseSettings
 # Tesseract runs locally in the worker, no vLLM endpoint needed
 LOCAL_MODELS = {"Tesseract": "local"}
 
+DISPLAY_NAMES = {
+    "Tesseract": "Tesseract",
+    "LightOnOCR-2-1B": "LightOnOCR",
+    "GLM-OCR": "GLM-OCR",
+    "Qwen3.5-35B-A3B": "Qwen3.5-35B",
+    "Qwen35-9B": "Qwen3.5-9B",
+}
+
 
 def _parse_models(raw: str) -> dict[str, str]:
     """Parse OCR_MODELS env var: 'DisplayName=http://host:port/v1;Other=http://...'"""
