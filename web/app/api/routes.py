@@ -73,7 +73,8 @@ async def get_config() -> AppConfig:
             available.append(ModelInfo(key=name, display=display))
             continue
         try:
-            health_url = url.replace("/v1", "/health")
+            # vLLM URLs end in /v1, Docling URLs don't
+            health_url = url.rstrip("/").replace("/v1", "") + "/health"
             async with httpx.AsyncClient(timeout=2) as client:
                 resp = await client.get(health_url)
                 if resp.status_code == 200:

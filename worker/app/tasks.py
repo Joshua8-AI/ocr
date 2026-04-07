@@ -44,6 +44,9 @@ MODEL_PROMPTS = {
 # Models that run locally without vLLM
 LOCAL_MODELS = {"Tesseract"}
 
+# Models that use Docling Serve API (not vLLM)
+DOCLING_MODELS = {"Docling": False, "Docling-VLM": True}  # value = use_vlm flag
+
 
 def _resolve_model_id(model_name: str) -> str:
     return MODEL_HF_IDS.get(model_name, model_name)
@@ -75,8 +78,9 @@ def process_ocr_job(
 ) -> None:
     """Main OCR pipeline task."""
     is_local = model in LOCAL_MODELS
+    is_docling = model in DOCLING_MODELS
 
-    if not is_local:
+    if not is_local and not is_docling:
         if not vllm_url:
             vllm_url = settings.vllm_url
         model_id = _resolve_model_id(model)
@@ -110,7 +114,9 @@ def process_ocr_job(
                 total_pages=0,
             )
 
-            if is_local:
+            if is_docling:
+                page_texts, pt, ct = _process_docling(job_id, filepath, vllm_url, model)
+            elif is_local:
                 page_texts, pt, ct = _process_local(job_id, filepath, ext, model)
             elif ext == ".pdf":
                 page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt)
@@ -203,6 +209,19 @@ def _process_local(
             page_texts.append(result.text)
             _update_progress(job_id, current_page=i)
         return page_texts, 0, 0
+
+
+def _process_docling(
+    job_id: str, filepath: str, docling_url: str, model: str,
+) -> tuple[list[str], int, int]:
+    """Process a file via Docling Serve API (whole-document conversion)."""
+    from app.ocr.docling import ocr_docling
+
+    use_vlm = DOCLING_MODELS.get(model, False)
+    _update_progress(job_id, total_pages=1, current_page=0)
+    result = ocr_docling(filepath, docling_url, use_vlm=use_vlm)
+    _update_progress(job_id, current_page=1, total_pages=1)
+    return [result.text], 0, 0
 
 
 def _process_pdf_file(
