@@ -6,7 +6,7 @@ LOCAL_MODELS = {"Tesseract": "local"}
 DISPLAY_NAMES = {
     "Tesseract": "Tesseract",
     "Docling": "Docling",
-    "Docling-VLM": "Docling+VLM",
+    "Docling-VLM": "Docling+Qwen3.5",
     "LightOnOCR-2-1B": "LightOnOCR",
     "GLM-OCR": "GLM-OCR",
     "Qwen35-9B": "Qwen3.5-9B",

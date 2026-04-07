@@ -23,9 +23,16 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
         files = {"files": (filepath.split("/")[-1], f)}
         data = {}
         if use_vlm:
-            data["options"] = json.dumps({
-                "pipeline": "vlm",
-                "vlm_pipeline_preset": "qwen35",
+            data["pipeline"] = "vlm"
+            data["vlm_pipeline_model_api"] = json.dumps({
+                "url": "http://ultra7:8005/v1/chat/completions",
+                "headers": {},
+                "params": {"model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit", "max_tokens": 4096},
+                "timeout": 120,
+                "concurrency": 4,
+                "prompt": "Convert this page to docling.",
+                "scale": 2.0,
+                "response_format": "doctags",
             })
 
         with httpx.Client(timeout=600) as client:
