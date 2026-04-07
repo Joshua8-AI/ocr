@@ -21,18 +21,18 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
 
     with open(filepath, "rb") as f:
         files = {"files": (filepath.split("/")[-1], f)}
-        data = {}
+        data = {"to_formats": "md"}
         if use_vlm:
             data["pipeline"] = "vlm"
             data["vlm_pipeline_model_api"] = json.dumps({
-                "url": "http://ultra7:8005/v1/chat/completions",
+                "url": "http://192.168.30.211:8005/v1/chat/completions",
                 "headers": {},
-                "params": {"model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit", "max_tokens": 4096},
-                "timeout": 120,
+                "params": {"model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit", "max_tokens": 16384},
+                "timeout": 300,
                 "concurrency": 4,
-                "prompt": "Convert this page to docling.",
+                "prompt": "Convert this page to markdown. Do not miss any text and only output the bare markdown!",
                 "scale": 2.0,
-                "response_format": "doctags",
+                "response_format": "markdown",
             })
 
         with httpx.Client(timeout=600) as client:
@@ -40,9 +40,15 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
             resp.raise_for_status()
             result = resp.json()
 
+    doc = result.get("document", {})
+    logger.info("Docling response status=%s, doc keys=%s", result.get("status"), list(doc.keys()))
+    for k, v in doc.items():
+        if v is not None and k != "filename":
+            logger.info("Docling doc[%s] length=%s", k, len(str(v)))
+
     if result.get("status") != "success":
         errors = result.get("errors", [])
         raise RuntimeError(f"Docling conversion failed: {errors}")
 
-    md_content = result.get("document", {}).get("md_content", "")
+    md_content = doc.get("md_content") or doc.get("text_content") or ""
     return OcrResult(text=md_content, prompt_tokens=0, completion_tokens=0)

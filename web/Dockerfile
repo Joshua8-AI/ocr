@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN sed -i 's|localhost:8081|host.docker.internal:8081|g' uv.lock && \
+    uv sync --frozen --no-dev
 
 COPY app/ app/
 

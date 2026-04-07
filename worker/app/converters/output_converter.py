@@ -87,15 +87,16 @@ def save_searchable_pdf(
 
 
 def save_docx(page_texts: list[str], output_path: str) -> str:
-    """Save OCR results as a Word document."""
-    doc = Document()
+    """Save OCR results as a Word document using Pandoc for proper table conversion."""
+    import pypandoc
 
-    for i, text in enumerate(page_texts):
-        if i > 0:
-            doc.add_page_break()
-        _add_markdown_to_docx(doc, text)
-
-    doc.save(output_path)
+    content = "\n\n---\n\n".join(page_texts)
+    pypandoc.convert_text(
+        content,
+        "docx",
+        format="markdown",
+        outputfile=output_path,
+    )
     return output_path
 
 
