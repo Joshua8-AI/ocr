@@ -18,7 +18,7 @@ services:
       extra_hosts:
         - "host.docker.internal:host-gateway"
     ports:
-      - "0.0.0.0:8200:8000"
+      - "0.0.0.0:8500:8000"
     depends_on:
       redis:
         condition: service_healthy
@@ -26,7 +26,7 @@ services:
       - shared-data:/data
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - OCR_MODELS=Docling=http://192.168.30.208:5001;LightOnOCR-2-1B=http://192.168.30.210:8500/v1;GLM-OCR=http://192.168.30.210:8501/v1;Qwen35-9B=http://192.168.30.208:8005/v1;Qwen3.5-35B-A3B=http://192.168.30.211:8005/v1;Docling-VLM=http://192.168.30.208:5001
+      - OCR_MODELS=Docling=http://192.168.30.208:5001;LightOnOCR-2-1B=http://192.168.30.210:8022/v1;GLM-OCR=http://192.168.30.210:8501/v1;Qwen35-9B=http://192.168.30.208:8005/v1;Qwen3.5-35B-A3B=http://192.168.30.211:8005/v1;Docling-VLM=http://192.168.30.208:5001
     networks:
       - ocr-net
     restart: unless-stopped
