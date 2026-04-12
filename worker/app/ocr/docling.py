@@ -4,6 +4,7 @@ import logging
 
 import httpx
 
+from app.config import settings
 from app.ocr.engine import OcrResult
 
 logger = logging.getLogger(__name__)
@@ -14,20 +15,28 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
 
     Args:
         filepath: Path to the document file
-        docling_url: Base URL of Docling Serve (e.g. http://192.168.30.208:5001)
-        use_vlm: If True, use VLM pipeline with qwen35 preset
+        docling_url: Base URL of Docling Serve (e.g. http://docling:5001)
+        use_vlm: If True, use VLM pipeline against DOCLING_VLM_URL
     """
     url = f"{docling_url}/v1/convert/file"
 
     with open(filepath, "rb") as f:
         files = {"files": (filepath.split("/")[-1], f)}
-        data = {"to_formats": "md"}
+        data = {
+            "to_formats": "md",
+            "image_export_mode": "embedded",
+            "include_images": "true",
+        }
         if use_vlm:
+            if not settings.docling_vlm_url:
+                raise RuntimeError(
+                    "DOCLING_VLM_URL is not set; required for Docling-VLM pipeline"
+                )
             data["pipeline"] = "vlm"
             data["vlm_pipeline_model_api"] = json.dumps({
-                "url": "http://192.168.30.211:8005/v1/chat/completions",
+                "url": settings.docling_vlm_url,
                 "headers": {},
-                "params": {"model": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit", "max_tokens": 16384},
+                "params": {"model": settings.docling_vlm_model, "max_tokens": 16384},
                 "timeout": 300,
                 "concurrency": 4,
                 "prompt": "Convert this page to markdown. Do not miss any text and only output the bare markdown!",
@@ -35,7 +44,7 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
                 "response_format": "markdown",
             })
 
-        with httpx.Client(timeout=600) as client:
+        with httpx.Client(timeout=1800) as client:
             resp = client.post(url, files=files, data=data)
             resp.raise_for_status()
             result = resp.json()

@@ -215,12 +215,25 @@ def _process_docling(
     job_id: str, filepath: str, docling_url: str, model: str,
 ) -> tuple[list[str], int, int]:
     """Process a file via Docling Serve API (whole-document conversion)."""
+    import fitz
     from app.ocr.docling import ocr_docling
 
     use_vlm = DOCLING_MODELS.get(model, False)
-    _update_progress(job_id, total_pages=1, current_page=0)
+
+    # Count actual pages for progress display
+    ext = os.path.splitext(filepath)[1].lower()
+    total_pages = 1
+    if ext == ".pdf":
+        try:
+            doc = fitz.open(filepath)
+            total_pages = len(doc)
+            doc.close()
+        except Exception:
+            pass
+
+    _update_progress(job_id, total_pages=total_pages, current_page=0)
     result = ocr_docling(filepath, docling_url, use_vlm=use_vlm)
-    _update_progress(job_id, current_page=1, total_pages=1)
+    _update_progress(job_id, current_page=total_pages, total_pages=total_pages)
     return [result.text], 0, 0
 
 

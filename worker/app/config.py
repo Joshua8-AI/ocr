@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     result_retention_hours: int = 36
     ocr_timeout_seconds: int = 120
     ocr_max_tokens: int = 8192
+    docling_vlm_url: str = ""
+    docling_vlm_model: str = "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit"
 
 
 settings = Settings()

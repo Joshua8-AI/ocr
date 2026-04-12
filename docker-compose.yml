@@ -15,10 +15,8 @@ services:
   web:
     build:
       context: ./web
-      extra_hosts:
-        - "host.docker.internal:host-gateway"
     ports:
-      - "0.0.0.0:8500:8000"
+      - "0.0.0.0:${APP_PORT:-8500}:8000"
     depends_on:
       redis:
         condition: service_healthy
@@ -26,7 +24,7 @@ services:
       - shared-data:/data
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - OCR_MODELS=Docling=http://192.168.30.208:5001;LightOnOCR-2-1B=http://192.168.30.210:8022/v1;GLM-OCR=http://192.168.30.210:8501/v1;Qwen35-9B=http://192.168.30.208:8005/v1;Qwen3.5-35B-A3B=http://192.168.30.211:8005/v1;Docling-VLM=http://192.168.30.208:5001
+      - OCR_MODELS=${OCR_MODELS}
     networks:
       - ocr-net
     restart: unless-stopped
@@ -34,10 +32,8 @@ services:
   worker:
     build:
       context: ./worker
-      extra_hosts:
-        - "host.docker.internal:host-gateway"
     command: >
-      uv run celery -A app.celery_app worker --beat
+      celery -A app.celery_app worker --beat
       --loglevel=info --concurrency=2 -Q ocr_queue
     depends_on:
       redis:
@@ -46,6 +42,8 @@ services:
       - shared-data:/data
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - DOCLING_VLM_URL=${DOCLING_VLM_URL:-}
+      - DOCLING_VLM_MODEL=${DOCLING_VLM_MODEL:-cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit}
     networks:
       - ocr-net
     restart: unless-stopped
