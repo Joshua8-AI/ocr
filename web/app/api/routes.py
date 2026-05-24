@@ -19,7 +19,7 @@ from app.api.schemas import (
     OutputFormat,
     UploadResponse,
 )
-from app.config import DISPLAY_NAMES, settings
+from app.config import DISPLAY_NAMES, MODEL_PARAMS, settings
 from app.validation.file_validator import (
     FileValidationError,
     validate_file_extension,
@@ -73,8 +73,16 @@ async def get_config() -> AppConfig:
             available.append(ModelInfo(key=name, display=display))
             continue
         try:
-            # vLLM URLs end in /v1, Docling URLs don't
-            health_url = url.rstrip("/").replace("/v1", "") + "/health"
+            base = url.rstrip("/")
+            if base.endswith("/v1"):
+                # OpenAI-compatible backend (vLLM or the LiteLLM gateway):
+                # /v1/models is instant and confirms the API is serving.
+                # LiteLLM's /health pings every backend and is far too slow
+                # for this 2s startup probe.
+                health_url = base + "/models"
+            else:
+                # Docling Serve and other non-OpenAI backends
+                health_url = base + "/health"
             async with httpx.AsyncClient(timeout=2) as client:
                 resp = await client.get(health_url)
                 if resp.status_code == 200:
@@ -82,6 +90,8 @@ async def get_config() -> AppConfig:
                     available.append(ModelInfo(key=name, display=display))
         except Exception:
             pass
+    # Order the picker fast/small -> accurate/large (matches the UI scale)
+    available.sort(key=lambda m: (MODEL_PARAMS.get(m.key, 999), m.key))
     return AppConfig(models=available)
 
 

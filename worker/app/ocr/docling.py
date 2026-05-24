@@ -39,7 +39,14 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
                 "params": {"model": settings.docling_vlm_model, "max_tokens": 16384},
                 "timeout": 300,
                 "concurrency": 4,
-                "prompt": "Convert this page to markdown. Do not miss any text and only output the bare markdown!",
+                "prompt": (
+                    "Convert this page to GitHub-flavored Markdown, transcribing the complete body "
+                    "content exactly as written in natural reading order. For ANY tabular data you "
+                    "MUST output a Markdown table delimited with | pipe | characters and a header "
+                    "separator row (e.g. | --- | --- |); never reproduce table columns using spaces "
+                    "or fixed-width alignment. Do not transcribe running headers, running footers, or "
+                    "page numbers in the top or bottom margins. Output only the bare markdown."
+                ),
                 "scale": 2.0,
                 "response_format": "markdown",
             })
@@ -60,4 +67,22 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
         raise RuntimeError(f"Docling conversion failed: {errors}")
 
     md_content = doc.get("md_content") or doc.get("text_content") or ""
+    if use_vlm:
+        md_content = _unescape_vlm_markdown(md_content)
     return OcrResult(text=md_content, prompt_tokens=0, completion_tokens=0)
+
+
+def _unescape_vlm_markdown(md: str) -> str:
+    """Reverse Docling's markdown serializer escaping that corrupts LaTeX math.
+
+    Docling re-serializes the VLM's markdown and backslash-escapes `_`/`*` and
+    HTML-entity-encodes `< > &` — inside `$...$` math this breaks rendering and
+    downstream parsing (e.g. $S\\_{\\lambda}$ instead of $S_{\\lambda}$). On
+    olmOCR-bench this lifted Docling-VLM arxiv_math 21.6% -> 55.1% (Overall
+    63.0 -> 67.5). Note: a deeper Docling bug also turns paired subscripts
+    `_{x_{..}}` into emphasis `*`, which is NOT cleanly reversible here, so some
+    dense math still degrades.
+    """
+    md = md.replace(r"\_", "_").replace(r"\*", "*")
+    md = md.replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&")
+    return md

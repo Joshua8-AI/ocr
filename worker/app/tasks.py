@@ -11,6 +11,7 @@ from app.config import settings
 from app.converters.input_converter import convert_to_images
 from app.converters.output_converter import (
     save_docx,
+    save_html,
     save_markdown,
     save_plaintext,
     save_searchable_pdf,
@@ -27,18 +28,165 @@ redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True)
 UPLOAD_DIR = os.path.join(settings.data_dir, "uploads")
 RESULT_DIR = os.path.join(settings.data_dir, "results")
 
+# Each value is the model id sent in the API request. All of these route
+# through the LiteLLM gateway (ultra7:8000) and are served under the litellm
+# names below.
 MODEL_HF_IDS = {
-    "LightOnOCR-2-1B": "switzerchees/LightOnOCR-2-1B-NVFP4",
-    "Qwen3.5-35B-A3B": "cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit",
-    "GLM-OCR": "zai-org/GLM-OCR",
-    "Qwen35-9B": "cyankiwi/Qwen3.5-9B-AWQ-4bit",
+    "LightOnOCR-2-1B": "lightonocr:1b",
+    "GLM-OCR": "glm-ocr:1b",
+    "OlmOCR2": "olmocr2:7b",
+    "Qwen35-9B": "qwen3.5-9b",
+    "Qwen35-122B": "qwen3.5-122b",
+    "Qwen3.6-35B": "qwen3.6-35b",
+    "Gemma4-26B": "gemma4:26b",
+    "Gemma4-31B": "gemma4:31b",
+    "Gemma4-E4B": "gemma4:e4b",
+    "Chandra": "chandra:5b",
+    "DeepSeek-OCR": "deepseek-ocr:3b",
+    "dots-ocr": "dots-ocr:2b",
+    "Nanonets-OCR2": "nanonets-ocr2:3b",
 }
 
-NATIVE_OCR_MODELS = {"LightOnOCR-2-1B"}
+NATIVE_OCR_MODELS = {"LightOnOCR-2-1B", "OlmOCR2"}
+
+# Chandra is a task-specific OCR fine-tune: it must get its exact training prompt,
+# near-greedy sampling, image-before-text, no system prompt, thinking disabled, and
+# a large token budget, or it drifts (bbox-only / garbled). It emits HTML via the
+# `ocr` prompt (`ocr_layout` returns bbox-only), which we convert to markdown.
+# Prompt reproduced verbatim from datalab-to/chandra chandra/prompts.py.
+_CHANDRA_TAGS = ["math", "br", "i", "b", "u", "del", "sup", "sub", "table", "tr", "td", "p", "th", "div", "pre", "h1", "h2", "h3", "h4", "h5", "ul", "ol", "li", "input", "a", "span", "img", "hr", "tbody", "small", "caption", "strong", "thead", "big", "code", "chem"]
+_CHANDRA_ATTRS = ["class", "colspan", "rowspan", "display", "checked", "type", "border", "value", "style", "href", "alt", "align", "data-bbox", "data-label"]
+_CHANDRA_ENDING = f"""
+Only use these tags {_CHANDRA_TAGS}, and these attributes {_CHANDRA_ATTRS}.
+
+Guidelines:
+* Inline math: Surround math with <math>...</math> tags. Math expressions should be rendered in KaTeX-compatible LaTeX. Use display for block math.
+* Tables: Use colspan and rowspan attributes to match table structure.
+* Formatting: Maintain consistent formatting with the image, including spacing, indentation, subscripts/superscripts, and special characters.
+* Images: Include a description of any images in the alt attribute of an <img> tag. Do not fill out the src property. Describe in detail inside the div tag. Also convert charts to high fidelity data, and convert diagrams to mermaid.
+* Forms: Mark checkboxes and radio buttons properly.
+* Text: join lines together properly into paragraphs using <p>...</p> tags.  Use <br> tags for line breaks within paragraphs, but only when absolutely necessary to maintain meaning.
+* Chemistry: Use <chem>...</chem> tags for chemical formulas with reactive SMILES.
+* Lists: Preserve indents and proper list markers.
+* Use the simplest possible HTML structure that accurately represents the content of the block.
+* Make sure the text is accurate and easy for a human to read and interpret.  Reading order should be correct and natural.
+""".strip()
+CHANDRA_PROMPT = f"""
+OCR this image to HTML.
+
+{_CHANDRA_ENDING}
+""".strip()
+
+# DeepSeek-OCR / dots.ocr / Nanonets-OCR2 are task-specific OCR fine-tunes served
+# by llama.cpp; each gets its image-first text prompt (no system prompt), verified
+# on olmOCR-bench. DeepSeek emits clean markdown (no post); dots.ocr and Nanonets
+# emit HTML tables (-> html2md). All run near-greedy (temp 0). NOTE: llama.cpp
+# serves one request at a time — concurrent calls 500 (engine retries absorb it).
+DEEPSEEK_OCR_PROMPT = "Convert the document to markdown."
+DOTS_OCR_PROMPT = "Extract the text content from this image."
+NANONETS_OCR_PROMPT = (
+    "Extract the text from the above document as if you were reading it naturally. "
+    "Return the tables in html format. Return the equations in LaTeX representation. "
+    "If there is an image in the document and image caption is not present, add a small "
+    "description of the image inside the <img></img> tag; otherwise, add the image caption "
+    "inside <img></img>. Watermarks should be wrapped in brackets. "
+    "Ex: <watermark>OFFICIAL COPY</watermark>. Page numbers should be wrapped in brackets. "
+    "Ex: <page_number>14</page_number> or <page_number>9/22</page_number>. "
+    "Prefer using ☐ and ☑ for check boxes."
+)
 
 # Models that use a fixed text prompt instead of system prompt
 MODEL_PROMPTS = {
     "GLM-OCR": "Text Recognition:",
+    "Chandra": CHANDRA_PROMPT,
+    "DeepSeek-OCR": DEEPSEEK_OCR_PROMPT,
+    "dots-ocr": DOTS_OCR_PROMPT,
+    "Nanonets-OCR2": NANONETS_OCR_PROMPT,
+}
+
+# Tuned general-VLM prompt for Qwen3.6-35B. With the default shared prompt the
+# 35B space-aligns tables (unparseable) and pads output with page furniture. This
+# prompt + temperature 0 lifted it from 56.3% to 72.9% Overall on olmOCR-bench
+# (150-doc sample, 2026-05-23) — see results/prompt_iter_log.md. It is *not*
+# applied to the other general-VLM models (9B/122B/Gemmas), which don't share the
+# table problem and can regress with the stricter "omit furniture" wording.
+QWEN36_SYSTEM_PROMPT = (
+    "You are a strict OCR engine. Extract all visible text from the image exactly as it appears, "
+    "in natural reading order. Output GitHub-flavored Markdown. "
+    "For ANY tabular data you MUST output a Markdown table delimited with | pipe | characters and a "
+    "header separator row (e.g. | --- | --- |). Never reproduce table columns using spaces or "
+    "fixed-width alignment. "
+    "Output only the main body content found in the image. Do NOT transcribe running headers, "
+    "running footers, page numbers, or watermarks; omit this repeated page furniture entirely. "
+    "Do not add interpretation, analysis, commentary, summaries, or insights. "
+    "Do not add emoji. Do not describe what the image shows. "
+    "For diagrams, extract only the text labels and annotations that appear in the image. "
+    "If no text is visible, output only: [no text detected]"
+)
+QWEN36_USER_PROMPT = (
+    "Extract all text from this image exactly as written. Render every table as a Markdown pipe table."
+)
+
+# Tuned prompt for Qwen35-9B AND Qwen35-122B (identical winners from per-model
+# hill-climbs, olmOCR-bench 2026-05-24): Qwen35-9B 62.6->68.1%, Qwen35-122B
+# 61.8->70.7% @ temp 0. Adds, vs the 35B prompt, a COMPLETENESS safeguard (the 9B
+# over-omits dense text without it) and CONCRETE furniture examples + a
+# standalone-page-number rule (the 9B/122B GAIN headers from these; the 35B does
+# NOT, which is why it keeps its simpler QWEN36 prompt). See results/q9_iter_log.md,
+# q122_iter_log.md; prompts in ocr-bench/winning_prompts/.
+QWEN35_SYSTEM_PROMPT = (
+    "You are a strict OCR engine. Extract all visible text from the image exactly as it appears, "
+    "in natural reading order. Output GitHub-flavored Markdown. "
+    "For ANY tabular data you MUST output a Markdown table delimited with | pipe | characters and a "
+    "header separator row (e.g. | --- | --- |). Never reproduce table columns using spaces or "
+    "fixed-width alignment. "
+    "Transcribe the COMPLETE body content: every line of body text, including dense, small, faint, "
+    "or footnote text, and every mathematical expression. "
+    "Do NOT transcribe anything printed in the top or bottom page margins — running headers, "
+    "running footers, page numbers, journal or publisher names, and DOIs or URLs printed in the "
+    "margin — and never output a standalone page number. "
+    "Do not add interpretation, analysis, commentary, summaries, or insights. "
+    "Do not add emoji. Do not describe what the image shows. "
+    "For diagrams, extract only the text labels and annotations that appear in the image. "
+    "If no text is visible, output only: [no text detected]"
+)
+
+# Per-model general-VLM prompt overrides (system + user instruction). Models not
+# listed fall back to engine.ocr_image's default OCR_SYSTEM_PROMPT + generic line.
+MODEL_SYSTEM_PROMPTS = {
+    "Qwen3.6-35B": QWEN36_SYSTEM_PROMPT,
+    "Qwen35-9B": QWEN35_SYSTEM_PROMPT,
+    "Qwen35-122B": QWEN35_SYSTEM_PROMPT,
+}
+MODEL_USER_PROMPTS = {
+    "Qwen3.6-35B": QWEN36_USER_PROMPT,
+    "Qwen35-9B": QWEN36_USER_PROMPT,
+    "Qwen35-122B": QWEN36_USER_PROMPT,
+}
+
+# Per-model sampling / request-body overrides merged into the chat payload.
+MODEL_SAMPLING = {
+    "Chandra": {
+        "temperature": 0.0,
+        "top_p": 0.1,
+        "max_tokens": 12384,
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+    },
+    # Greedy decoding scored higher and removed the run-to-run variance seen at
+    # temp 0.1 (olmOCR-bench tuning, 2026-05-23).
+    "Qwen3.6-35B": {"temperature": 0.0},
+    "Qwen35-9B": {"temperature": 0.0},
+    "Qwen35-122B": {"temperature": 0.0},
+    "DeepSeek-OCR": {"temperature": 0.0},
+    "dots-ocr": {"temperature": 0.0},
+    "Nanonets-OCR2": {"temperature": 0.0},
+}
+
+# Per-model output post-processing ("html2md" => convert HTML to markdown).
+MODEL_POST = {
+    "Chandra": "html2md",
+    "dots-ocr": "html2md",
+    "Nanonets-OCR2": "html2md",
 }
 
 # Models that run locally without vLLM
@@ -86,6 +234,10 @@ def process_ocr_job(
         model_id = _resolve_model_id(model)
         is_native_ocr = model in NATIVE_OCR_MODELS
         text_prompt = MODEL_PROMPTS.get(model, "")
+        sampling = MODEL_SAMPLING.get(model)
+        post = MODEL_POST.get(model, "")
+        system_prompt = MODEL_SYSTEM_PROMPTS.get(model, "")
+        user_prompt = MODEL_USER_PROMPTS.get(model, "")
 
     result_dir = os.path.join(RESULT_DIR, job_id)
     os.makedirs(result_dir, exist_ok=True)
@@ -119,9 +271,9 @@ def process_ocr_job(
             elif is_local:
                 page_texts, pt, ct = _process_local(job_id, filepath, ext, model)
             elif ext == ".pdf":
-                page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt)
+                page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt, sampling, post, system_prompt, user_prompt)
             else:
-                page_texts, pt, ct = _process_image_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt)
+                page_texts, pt, ct = _process_image_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt, sampling, post, system_prompt, user_prompt)
 
             total_prompt_tokens += pt
             total_completion_tokens += ct
@@ -239,15 +391,17 @@ def _process_docling(
 
 def _process_pdf_file(
     job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool, text_prompt: str = "",
+    sampling: dict | None = None, post: str = "", system_prompt: str = "", user_prompt: str = "",
 ) -> tuple[list[str], int, int]:
     def progress_cb(page_num: int, total_pages: int):
         _update_progress(job_id, current_page=page_num, total_pages=total_pages)
 
-    return process_pdf(filepath, model_id, vllm_url, is_native_ocr, text_prompt, progress_callback=progress_cb)
+    return process_pdf(filepath, model_id, vllm_url, is_native_ocr, text_prompt, sampling=sampling, post=post, system_prompt=system_prompt, user_prompt=user_prompt, progress_callback=progress_cb)
 
 
 def _process_image_file(
     job_id: str, filepath: str, model_id: str, vllm_url: str, is_native_ocr: bool, text_prompt: str = "",
+    sampling: dict | None = None, post: str = "", system_prompt: str = "", user_prompt: str = "",
 ) -> tuple[list[str], int, int]:
     images = convert_to_images(filepath)
     total = len(images)
@@ -259,7 +413,7 @@ def _process_image_file(
     total_completion = 0
     for i, img in enumerate(images, 1):
         img_b64 = prepare_image(img)
-        result = ocr_image(img_b64, model_id, vllm_url, is_native_ocr, text_prompt)
+        result = ocr_image(img_b64, model_id, vllm_url, is_native_ocr, text_prompt, sampling=sampling, post=post, system_prompt=system_prompt, user_prompt=user_prompt)
         page_texts.append(result.text)
         total_prompt += result.prompt_tokens
         total_completion += result.completion_tokens
@@ -278,6 +432,9 @@ def _generate_output(
     if output_format == "markdown":
         path = os.path.join(result_dir, f"{base_name}.md")
         return save_markdown(page_texts, path)
+    elif output_format == "html":
+        path = os.path.join(result_dir, f"{base_name}.html")
+        return save_html(page_texts, path)
     elif output_format == "plaintext":
         path = os.path.join(result_dir, f"{base_name}.txt")
         return save_plaintext(page_texts, path)

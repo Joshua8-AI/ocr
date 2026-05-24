@@ -21,18 +21,22 @@ async function loadConfig() {
         if (resp.ok) appConfig = await resp.json();
     } catch (e) { /* defaults */ }
 
-    // Determine which model to default-check
+    // Determine which model to default-check: last-used wins, else the app default
+    const APP_DEFAULT = "Docling-VLM";
     const lastModel = localStorage.getItem("ocr_last_model");
     const modelKeys = appConfig.models.map((m) => m.key);
-    const defaultModel = lastModel && modelKeys.includes(lastModel)
+    const defaultModel = (lastModel && modelKeys.includes(lastModel))
         ? lastModel
-        : modelKeys.find((k) => k.startsWith("Qwen")) || modelKeys.find((k) => k !== "Tesseract") || modelKeys[0] || "";
+        : (modelKeys.includes(APP_DEFAULT)
+            ? APP_DEFAULT
+            : (modelKeys.find((k) => k !== "Tesseract") || modelKeys[0] || ""));
 
     modelChecks.innerHTML = "";
     for (const m of appConfig.models) {
         const checked = m.key === defaultModel ? "checked" : "";
+        const tag = m.key === APP_DEFAULT ? " (default)" : "";
         const lbl = document.createElement("label");
-        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m.key)}" ${checked}> ${escapeHtml(m.display)}`;
+        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m.key)}" ${checked}> ${escapeHtml(m.display)}${tag}`;
         modelChecks.appendChild(lbl);
     }
 }

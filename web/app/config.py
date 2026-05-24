@@ -6,11 +6,44 @@ LOCAL_MODELS = {"Tesseract": "local"}
 DISPLAY_NAMES = {
     "Tesseract": "Tesseract",
     "Docling": "Docling",
-    "Docling-VLM": "Docling+Qwen3.5",
+    "Docling-VLM": "Docling+Qwen3.6",
     "LightOnOCR-2-1B": "LightOnOCR",
     "GLM-OCR": "GLM-OCR",
+    "OlmOCR2": "OlmOCR2",
     "Qwen35-9B": "Qwen3.5-9B",
-    "Qwen3.5-35B-A3B": "Qwen3.5-35B",
+    "Qwen35-122B": "Qwen3.5-122B",
+    "Qwen3.6-35B": "Qwen3.6-35B",
+    "Gemma4-26B": "Gemma4-26B",
+    "Gemma4-31B": "Gemma4-31B",
+    "Gemma4-E4B": "Gemma4-E4B",
+    "Chandra": "Chandra",
+    "DeepSeek-OCR": "DeepSeek-OCR",
+    "dots-ocr": "dots.ocr",
+    "Nanonets-OCR2": "Nanonets-OCR2",
+}
+
+
+# Approximate model size in billions of parameters, used to order the model
+# picker from fast/small to accurate/large (matches the "fast → accurate" scale
+# under the selector). Tesseract/Docling have no LLM params; ties are nudged with
+# decimals so the faster/lighter option sits left of its heavier sibling.
+MODEL_PARAMS = {
+    "Tesseract": 0,
+    "Docling": 0.5,
+    "GLM-OCR": 1,
+    "LightOnOCR-2-1B": 1.5,
+    "dots-ocr": 2,
+    "DeepSeek-OCR": 3,
+    "Nanonets-OCR2": 3.1,
+    "Gemma4-E4B": 4,
+    "Chandra": 5,
+    "OlmOCR2": 7,
+    "Qwen35-9B": 9,
+    "Gemma4-26B": 26,
+    "Gemma4-31B": 31,
+    "Qwen3.6-35B": 35,
+    "Docling-VLM": 35.5,
+    "Qwen35-122B": 122,
 }
 
 

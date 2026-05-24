@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class OutputFormat(str, Enum):
     markdown = "markdown"
+    html = "html"
     plaintext = "plaintext"
     searchable_pdf = "searchable_pdf"
     docx = "docx"

@@ -28,8 +28,17 @@ instances you run yourself.
 | `Tesseract`           | Local Tesseract (always available; no endpoint)       |
 | `LightOnOCR-2-1B`     | LightOn's 2.1B native OCR model on vLLM               |
 | `GLM-OCR`             | ZAI's GLM-OCR on vLLM                                 |
-| `Qwen35-9B`           | Qwen 3.5 9B on vLLM (general VLM w/ OCR system prompt)|
-| `Qwen3.5-35B-A3B`     | Qwen 3.5 35B A3B on vLLM                              |
+| `OlmOCR2`             | AllenAI's olmOCR 2 (7B) native OCR model on vLLM      |
+| `Chandra`             | Datalab's Chandra (5B) OCR; emits HTML, converted to markdown |
+| `DeepSeek-OCR`        | DeepSeek-OCR (3B); "Convert the document to markdown." |
+| `dots-ocr`            | rednote dots.ocr (2B); emits HTML, converted to markdown |
+| `Nanonets-OCR2`       | Nanonets-OCR2 (3B); markdown + HTML tables, converted to markdown |
+| `Qwen35-9B`           | Qwen 3.5 9B (general VLM w/ OCR system prompt)        |
+| `Qwen35-122B`         | Qwen 3.5 122B A10B (general VLM w/ OCR system prompt) |
+| `Qwen3.6-35B`         | Qwen 3.6 35B A3B (general VLM w/ OCR system prompt)   |
+| `Gemma4-26B`          | Gemma 4 26B A4B (general VLM w/ OCR system prompt)    |
+| `Gemma4-31B`          | Gemma 4 31B (general VLM w/ OCR system prompt)        |
+| `Gemma4-E4B`          | Gemma 4 E4B (general VLM w/ OCR system prompt)        |
 | `Docling`             | Docling Serve, standard (layout-based) pipeline       |
 | `Docling-VLM`         | Docling Serve, VLM pipeline (calls a Qwen endpoint)   |
 

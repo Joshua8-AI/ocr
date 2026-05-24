@@ -100,6 +100,25 @@ def save_docx(page_texts: list[str], output_path: str) -> str:
     return output_path
 
 
+def save_html(page_texts: list[str], output_path: str) -> str:
+    """Save OCR results as a standalone HTML document using Pandoc.
+
+    --standalone wraps the output in a full HTML document (viewable in a browser);
+    --mathjax renders preserved $...$/$$...$$ LaTeX (e.g. from Chandra) client-side.
+    """
+    import pypandoc
+
+    content = "\n\n---\n\n".join(page_texts)
+    pypandoc.convert_text(
+        content,
+        "html",
+        format="markdown",
+        outputfile=output_path,
+        extra_args=["--standalone", "--mathjax", "--metadata", "title=OCR Result"],
+    )
+    return output_path
+
+
 def _strip_markdown(text: str) -> str:
     """Remove basic markdown formatting."""
     # Remove headers

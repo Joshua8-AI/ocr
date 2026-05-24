@@ -43,7 +43,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DOCLING_VLM_URL=${DOCLING_VLM_URL:-}
-      - DOCLING_VLM_MODEL=${DOCLING_VLM_MODEL:-cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit}
+      - DOCLING_VLM_MODEL=${DOCLING_VLM_MODEL:-Qwen3.6-35B}
     networks:
       - ocr-net
     restart: unless-stopped

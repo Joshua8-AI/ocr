@@ -25,6 +25,7 @@
                 <label for="format">Output format</label>
                 <select id="format">
                     <option value="markdown">Markdown</option>
+                    <option value="html">HTML</option>
                     <option value="plaintext">Plain text</option>
                     <option value="searchable_pdf">Searchable PDF</option>
                     <option value="docx">DOCX (Word)</option>
@@ -75,42 +76,122 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>LightOnOCR</td>
-                    <td><strong>76.4%</strong></td>
-                    <td><strong>88.7%</strong></td>
-                    <td>71.8%</td>
-                    <td><strong>89.2%</strong></td>
-                    <td>1.8s</td>
+                    <td>Qwen3.6-35B</td>
+                    <td><strong>72.9%</strong></td>
+                    <td>86.2%</td>
+                    <td><strong>70.2%</strong></td>
+                    <td>84.9%</td>
+                    <td>8.3s</td>
+                </tr>
+                <tr>
+                    <td>Qwen35-122B</td>
+                    <td>70.7%</td>
+                    <td><strong>90.2%</strong></td>
+                    <td>69.0%</td>
+                    <td>62.4%</td>
+                    <td>22s</td>
                 </tr>
                 <tr>
                     <td>GLM-OCR</td>
-                    <td>75.4%</td>
-                    <td>43.5%</td>
-                    <td>67.1%</td>
-                    <td>80.8%</td>
-                    <td>1.4s</td>
+                    <td>68.9%</td>
+                    <td>53.7%</td>
+                    <td>63.8%</td>
+                    <td>57.3%</td>
+                    <td>64s*</td>
                 </tr>
                 <tr>
-                    <td>Qwen3.5</td>
-                    <td>73.5%</td>
-                    <td>58.3%</td>
-                    <td><strong>75.5%</strong></td>
-                    <td>84.6%</td>
-                    <td>2.6s</td>
+                    <td>Qwen35-9B</td>
+                    <td>68.1%</td>
+                    <td>85.4%</td>
+                    <td>67.0%</td>
+                    <td>65.1%</td>
+                    <td>12s</td>
+                </tr>
+                <tr>
+                    <td>LightOnOCR-2-1B</td>
+                    <td>67.9%</td>
+                    <td>82.1%</td>
+                    <td>54.7%</td>
+                    <td><strong>89.3%</strong></td>
+                    <td>98s*</td>
+                </tr>
+                <tr>
+                    <td>OlmOCR2</td>
+                    <td>67.7%</td>
+                    <td>62.6%</td>
+                    <td>54.7%</td>
+                    <td>62.4%</td>
+                    <td>206s*</td>
+                </tr>
+                <tr>
+                    <td>DeepSeek-OCR</td>
+                    <td>67.0%</td>
+                    <td>65.9%</td>
+                    <td>62.2%</td>
+                    <td>50.1%</td>
+                    <td>10s*</td>
+                </tr>
+                <tr>
+                    <td>dots-ocr</td>
+                    <td>63.7%</td>
+                    <td>70.7%</td>
+                    <td>64.6%</td>
+                    <td>26.5%</td>
+                    <td>28s*</td>
+                </tr>
+                <tr>
+                    <td>Nanonets-OCR2</td>
+                    <td>57.6%</td>
+                    <td>69.9%</td>
+                    <td>64.9%</td>
+                    <td>39.0%</td>
+                    <td>35s*</td>
+                </tr>
+                <tr>
+                    <td>Chandra</td>
+                    <td>49.0%</td>
+                    <td>75.6%</td>
+                    <td>66.4%</td>
+                    <td>0.0%</td>
+                    <td>173s*</td>
                 </tr>
                 <tr>
                     <td>Tesseract</td>
-                    <td>34.4%</td>
-                    <td>0.4%</td>
-                    <td>41.1%</td>
+                    <td>36.2%</td>
+                    <td>0.8%</td>
+                    <td>47.3%</td>
                     <td>0.0%</td>
-                    <td><strong>0.3s</strong></td>
+                    <td>1.2s</td>
+                </tr>
+                <tr>
+                    <td>Gemma4-E4B</td>
+                    <td>25.7%</td>
+                    <td>34.1%</td>
+                    <td>11.2%</td>
+                    <td>8.6%</td>
+                    <td>146s*</td>
+                </tr>
+                <tr>
+                    <td>Gemma4-26B</td>
+                    <td>pending&dagger;</td>
+                    <td>&mdash;</td>
+                    <td>&mdash;</td>
+                    <td>&mdash;</td>
+                    <td>~100s*&dagger;</td>
+                </tr>
+                <tr>
+                    <td>Gemma4-31B</td>
+                    <td>pending&dagger;</td>
+                    <td>&mdash;</td>
+                    <td>&mdash;</td>
+                    <td>&mdash;</td>
+                    <td>~120s*&dagger;</td>
                 </tr>
             </tbody>
         </table>
-        <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a> (1,403 documents, 7,010 tests)</p>
+        <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a>, app-faithful run on a 150-document stratified sample (791 tests), 95% CI ±~3%. Columns: <em>Tables</em> = table tests; <em>Text</em> = mean of dense/multi-column/old-scan reading; <em>Math</em> = mean of arXiv &amp; old-scan math. <em>sec/page</em> is median per-page latency (GPU models under load on the shared gateway; Tesseract single-stream on CPU). Qwen3.6-35B, Qwen35-9B, and Qwen35-122B use per-model tuned prompts. <strong>*Time measured on legacy Pascal-generation GPUs</strong> (markedly slower); unmarked times are on current Blackwell GPUs (Tesseract on CPU). &dagger;Gemma4-26B/-31B time out at one-query-at-a-time limits on Pascal (600s/request), so accuracy is pending a low-parallelism re-run; the ~time/page shown is the estimated single-stream service time.</p>
     </div>
 </div>
-<script src="/static/app.js?v=5"></script>
+<script src="/static/app.js?v=6"></script>
 </body>
 </html>
