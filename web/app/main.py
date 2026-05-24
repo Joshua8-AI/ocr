@@ -21,7 +21,12 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
 async def index():
-    return FileResponse(os.path.join(static_dir, "index.html"))
+    # no-cache so Cloudflare/browsers always revalidate the HTML (chart + model list
+    # change on deploy). Static assets keep their ?v= long-cache for performance.
+    return FileResponse(
+        os.path.join(static_dir, "index.html"),
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 
 @app.get("/health")

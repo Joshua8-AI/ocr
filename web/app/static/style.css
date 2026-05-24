@@ -420,6 +420,20 @@ input:focus, select:focus {
     background: rgba(74, 108, 247, 0.04);
 }
 
+.bench-table tbody tr.group-row td {
+    text-align: left;
+    background: var(--bg);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.bench-table tbody tr.group-row:hover td {
+    background: var(--bg);
+}
+
 .bench-note {
     font-size: 0.75rem;
     color: var(--text-dim);

@@ -12,7 +12,7 @@ const uploadError = document.getElementById("upload-error");
 const activeJobsEl = document.getElementById("active-jobs");
 const historyListEl = document.getElementById("history-list");
 const formatSelect = document.getElementById("format");
-const modelChecks = document.getElementById("model-checkboxes");
+const modelSelect = document.getElementById("model-select");
 
 /* ── Init: load config ── */
 async function loadConfig() {
@@ -21,8 +21,8 @@ async function loadConfig() {
         if (resp.ok) appConfig = await resp.json();
     } catch (e) { /* defaults */ }
 
-    // Determine which model to default-check: last-used wins, else the app default
-    const APP_DEFAULT = "Docling-VLM";
+    // Determine the default selection: last-used wins, else the app default
+    const APP_DEFAULT = "Qwen3.6-35B-FS";
     const lastModel = localStorage.getItem("ocr_last_model");
     const modelKeys = appConfig.models.map((m) => m.key);
     const defaultModel = (lastModel && modelKeys.includes(lastModel))
@@ -31,19 +31,18 @@ async function loadConfig() {
             ? APP_DEFAULT
             : (modelKeys.find((k) => k !== "Tesseract") || modelKeys[0] || ""));
 
-    modelChecks.innerHTML = "";
+    modelSelect.innerHTML = "";
     for (const m of appConfig.models) {
-        const checked = m.key === defaultModel ? "checked" : "";
-        const tag = m.key === APP_DEFAULT ? " (default)" : "";
-        const lbl = document.createElement("label");
-        lbl.innerHTML = `<input type="radio" name="model" value="${escapeHtml(m.key)}" ${checked}> ${escapeHtml(m.display)}${tag}`;
-        modelChecks.appendChild(lbl);
+        const opt = document.createElement("option");
+        opt.value = m.key;
+        opt.textContent = m.display + (m.key === APP_DEFAULT ? " (default)" : "");
+        if (m.key === defaultModel) opt.selected = true;
+        modelSelect.appendChild(opt);
     }
 }
 
 function getSelectedModels() {
-    const selected = modelChecks.querySelector('input[name="model"]:checked');
-    return selected ? [selected.value] : [];
+    return modelSelect.value ? [modelSelect.value] : [];
 }
 
 /* ── Drop zone ── */

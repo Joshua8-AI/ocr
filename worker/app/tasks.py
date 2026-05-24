@@ -36,8 +36,13 @@ MODEL_HF_IDS = {
     "GLM-OCR": "glm-ocr:1b",
     "OlmOCR2": "olmocr2:7b",
     "Qwen35-9B": "qwen3.5-9b",
+    "Qwen35-9B-FS": "qwen3.5-9b",  # 9B + Docling furniture-strip (see FURNITURE_STRIP_MODELS)
     "Qwen35-122B": "qwen3.5-122b",
+    "Qwen35-122B-FS": "qwen3.5-122b",  # 122B + Docling furniture-strip (see FURNITURE_STRIP_MODELS)
     "Qwen3.6-35B": "qwen3.6-35b",
+    # Same backend model as Qwen3.6-35B; post-processed to strip page furniture
+    # (running headers/footers) via Docling layout detection. See FURNITURE_STRIP_MODELS.
+    "Qwen3.6-35B-FS": "qwen3.6-35b",
     "Gemma4-26B": "gemma4:26b",
     "Gemma4-31B": "gemma4:31b",
     "Gemma4-E4B": "gemma4:e4b",
@@ -155,13 +160,19 @@ QWEN35_SYSTEM_PROMPT = (
 # listed fall back to engine.ocr_image's default OCR_SYSTEM_PROMPT + generic line.
 MODEL_SYSTEM_PROMPTS = {
     "Qwen3.6-35B": QWEN36_SYSTEM_PROMPT,
+    "Qwen3.6-35B-FS": QWEN36_SYSTEM_PROMPT,
     "Qwen35-9B": QWEN35_SYSTEM_PROMPT,
+    "Qwen35-9B-FS": QWEN35_SYSTEM_PROMPT,
     "Qwen35-122B": QWEN35_SYSTEM_PROMPT,
+    "Qwen35-122B-FS": QWEN35_SYSTEM_PROMPT,
 }
 MODEL_USER_PROMPTS = {
     "Qwen3.6-35B": QWEN36_USER_PROMPT,
+    "Qwen3.6-35B-FS": QWEN36_USER_PROMPT,
     "Qwen35-9B": QWEN36_USER_PROMPT,
+    "Qwen35-9B-FS": QWEN36_USER_PROMPT,
     "Qwen35-122B": QWEN36_USER_PROMPT,
+    "Qwen35-122B-FS": QWEN36_USER_PROMPT,
 }
 
 # Per-model sampling / request-body overrides merged into the chat payload.
@@ -175,11 +186,19 @@ MODEL_SAMPLING = {
     # Greedy decoding scored higher and removed the run-to-run variance seen at
     # temp 0.1 (olmOCR-bench tuning, 2026-05-23).
     "Qwen3.6-35B": {"temperature": 0.0},
+    "Qwen3.6-35B-FS": {"temperature": 0.0},
     "Qwen35-9B": {"temperature": 0.0},
+    "Qwen35-9B-FS": {"temperature": 0.0},
     "Qwen35-122B": {"temperature": 0.0},
+    "Qwen35-122B-FS": {"temperature": 0.0},
     "DeepSeek-OCR": {"temperature": 0.0},
     "dots-ocr": {"temperature": 0.0},
     "Nanonets-OCR2": {"temperature": 0.0},
+    # Gemma4 are thinking models on the llama.cpp gateway; disable thinking or they
+    # spend the whole token budget on reasoning -> empty output / gateway 500s.
+    "Gemma4-26B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+    "Gemma4-31B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
+    "Gemma4-E4B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
 }
 
 # Per-model output post-processing ("html2md" => convert HTML to markdown).
@@ -190,10 +209,16 @@ MODEL_POST = {
 }
 
 # Models that run locally without vLLM
-LOCAL_MODELS = {"Tesseract"}
+LOCAL_MODELS = {"Tesseract", "Tesseract-FS"}
 
 # Models that use Docling Serve API (not vLLM)
 DOCLING_MODELS = {"Docling": False, "Docling-VLM": True}  # value = use_vlm flag
+
+# General-VLM models whose per-page output is post-processed to strip running
+# headers/footers using Docling's furniture detection (settings.docling_url).
+# These OCR exactly like their base model, then drop page furniture the prompt
+# can't reliably suppress. olmOCR-bench: Qwen3.6-35B 72.3% -> 80.9% Overall.
+FURNITURE_STRIP_MODELS = {"Qwen3.6-35B-FS", "Qwen35-9B-FS", "Qwen35-122B-FS", "Tesseract-FS"}
 
 
 def _resolve_model_id(model_name: str) -> str:
@@ -274,6 +299,10 @@ def process_ocr_job(
                 page_texts, pt, ct = _process_pdf_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt, sampling, post, system_prompt, user_prompt)
             else:
                 page_texts, pt, ct = _process_image_file(job_id, filepath, model_id, vllm_url, is_native_ocr, text_prompt, sampling, post, system_prompt, user_prompt)
+
+            if model in FURNITURE_STRIP_MODELS:
+                from app.ocr.furniture import strip_furniture_pages
+                page_texts = strip_furniture_pages(page_texts, filepath, settings.docling_url)
 
             total_prompt_tokens += pt
             total_completion_tokens += ct

@@ -44,6 +44,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - DOCLING_VLM_URL=${DOCLING_VLM_URL:-}
       - DOCLING_VLM_MODEL=${DOCLING_VLM_MODEL:-Qwen3.6-35B}
+      - DOCLING_URL=${DOCLING_URL:-}
     networks:
       - ocr-net
     restart: unless-stopped

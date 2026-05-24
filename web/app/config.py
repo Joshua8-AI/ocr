@@ -1,18 +1,22 @@
 from pydantic_settings import BaseSettings
 
 # Tesseract runs locally in the worker, no vLLM endpoint needed
-LOCAL_MODELS = {"Tesseract": "local"}
+LOCAL_MODELS = {"Tesseract": "local", "Tesseract-FS": "local"}
 
 DISPLAY_NAMES = {
     "Tesseract": "Tesseract",
+    "Tesseract-FS": "Tesseract (no headers/footers)",
     "Docling": "Docling",
     "Docling-VLM": "Docling+Qwen3.6",
     "LightOnOCR-2-1B": "LightOnOCR",
     "GLM-OCR": "GLM-OCR",
     "OlmOCR2": "OlmOCR2",
     "Qwen35-9B": "Qwen3.5-9B",
+    "Qwen35-9B-FS": "Qwen3.5-9B (no headers/footers)",
     "Qwen35-122B": "Qwen3.5-122B",
+    "Qwen35-122B-FS": "Qwen3.5-122B (no headers/footers)",
     "Qwen3.6-35B": "Qwen3.6-35B",
+    "Qwen3.6-35B-FS": "Qwen3.6-35B (no headers/footers)",
     "Gemma4-26B": "Gemma4-26B",
     "Gemma4-31B": "Gemma4-31B",
     "Gemma4-E4B": "Gemma4-E4B",
@@ -29,6 +33,7 @@ DISPLAY_NAMES = {
 # decimals so the faster/lighter option sits left of its heavier sibling.
 MODEL_PARAMS = {
     "Tesseract": 0,
+    "Tesseract-FS": 0.1,
     "Docling": 0.5,
     "GLM-OCR": 1,
     "LightOnOCR-2-1B": 1.5,
@@ -39,11 +44,14 @@ MODEL_PARAMS = {
     "Chandra": 5,
     "OlmOCR2": 7,
     "Qwen35-9B": 9,
+    "Qwen35-9B-FS": 9.1,
     "Gemma4-26B": 26,
     "Gemma4-31B": 31,
     "Qwen3.6-35B": 35,
+    "Qwen3.6-35B-FS": 35.1,
     "Docling-VLM": 35.5,
     "Qwen35-122B": 122,
+    "Qwen35-122B-FS": 122.1,
 }
 
 
