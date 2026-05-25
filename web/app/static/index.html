@@ -197,6 +197,22 @@
                     <td>173s*</td>
                 </tr>
                 <tr>
+                    <td>Gemma4-31B</td>
+                    <td>37.0%</td>
+                    <td>32.5%</td>
+                    <td>24.7%</td>
+                    <td>35.6%</td>
+                    <td>~120s*</td>
+                </tr>
+                <tr>
+                    <td>Gemma4-26B</td>
+                    <td>32.1%</td>
+                    <td>43.9%</td>
+                    <td>14.0%</td>
+                    <td>21.6%</td>
+                    <td>~100s*</td>
+                </tr>
+                <tr>
                     <td>Gemma4-E4B</td>
                     <td>25.7%</td>
                     <td>34.1%</td>
@@ -204,25 +220,9 @@
                     <td>8.6%</td>
                     <td>146s*</td>
                 </tr>
-                <tr>
-                    <td>Gemma4-26B</td>
-                    <td>pending&dagger;</td>
-                    <td>&mdash;</td>
-                    <td>&mdash;</td>
-                    <td>&mdash;</td>
-                    <td>~100s*&dagger;</td>
-                </tr>
-                <tr>
-                    <td>Gemma4-31B</td>
-                    <td>pending&dagger;</td>
-                    <td>&mdash;</td>
-                    <td>&mdash;</td>
-                    <td>&mdash;</td>
-                    <td>~120s*&dagger;</td>
-                </tr>
             </tbody>
         </table>
-        <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a>, app-faithful run on a 150-document stratified sample (791 tests), 95% CI ±~3%. Columns: <em>Tables</em> = table tests; <em>Text</em> = mean of dense/multi-column/old-scan reading; <em>Math</em> = mean of arXiv &amp; old-scan math. <em>sec/page</em> is median per-page latency (GPU models under load on the shared gateway; Tesseract single-stream on CPU). Qwen3.6-35B, Qwen35-9B, and Qwen35-122B use per-model tuned prompts. &Dagger;Qwen3.6-35B-FS is Qwen3.6-35B with running headers/footers removed via Docling layout detection (a ~2s/doc post-process); it keeps identical tables/math while lifting clean-text accuracy. <strong>*Time measured on legacy Pascal-generation GPUs</strong> (markedly slower); unmarked times are on current Blackwell GPUs (Tesseract on CPU). &dagger;Gemma4-26B/-31B time out at one-query-at-a-time limits on Pascal (600s/request), so accuracy is pending a low-parallelism re-run; the ~time/page shown is the estimated single-stream service time.</p>
+        <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a>, app-faithful run on a 150-document stratified sample (791 tests), 95% CI ±~3%. Columns: <em>Tables</em> = table tests; <em>Text</em> = mean of dense/multi-column/old-scan reading; <em>Math</em> = mean of arXiv &amp; old-scan math. <em>sec/page</em> is median per-page latency (GPU models under load on the shared gateway; Tesseract single-stream on CPU). Qwen3.6-35B, Qwen35-9B, and Qwen35-122B use per-model tuned prompts. &Dagger;Qwen3.6-35B-FS is Qwen3.6-35B with running headers/footers removed via Docling layout detection (a ~2s/doc post-process); it keeps identical tables/math while lifting clean-text accuracy. <strong>*Time measured on legacy Pascal-generation GPUs</strong> (markedly slower); unmarked times are on current Blackwell GPUs (Tesseract on CPU). &dagger;Gemma4-26B/-31B are reasoning models; they must be run with thinking disabled (otherwise they exhaust the token budget and return empty pages). Scored single-stream (parallelism 1) on Pascal; the ~time/page shown is the estimated single-stream service time.</p>
     </div>
 </div>
 <script src="/static/app.js?v=10"></script>
