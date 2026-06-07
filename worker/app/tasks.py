@@ -35,14 +35,15 @@ MODEL_HF_IDS = {
     "LightOnOCR-2-1B": "lightonocr:1b",
     "GLM-OCR": "glm-ocr:1b",
     "OlmOCR2": "olmocr2:7b",
-    "Qwen35-9B": "qwen3.5-9b",
-    "Qwen35-9B-FS": "qwen3.5-9b",  # 9B + Docling furniture-strip (see FURNITURE_STRIP_MODELS)
+    "Qwen35-9B": "qwen3.5:9b",
+    "Qwen35-9B-FS": "qwen3.5:9b",  # 9B + Docling furniture-strip (see FURNITURE_STRIP_MODELS)
     "Qwen35-122B": "qwen3.5-122b",
     "Qwen35-122B-FS": "qwen3.5-122b",  # 122B + Docling furniture-strip (see FURNITURE_STRIP_MODELS)
     "Qwen3.6-35B": "qwen3.6-35b",
     # Same backend model as Qwen3.6-35B; post-processed to strip page furniture
     # (running headers/footers) via Docling layout detection. See FURNITURE_STRIP_MODELS.
     "Qwen3.6-35B-FS": "qwen3.6-35b",
+    "Gemma4-12B": "gemma4:12b",
     "Gemma4-26B": "gemma4:26b",
     "Gemma4-31B": "gemma4:31b",
     "Gemma4-E4B": "gemma4:e4b",
@@ -50,6 +51,7 @@ MODEL_HF_IDS = {
     "DeepSeek-OCR": "deepseek-ocr:3b",
     "dots-ocr": "dots-ocr:2b",
     "Nanonets-OCR2": "nanonets-ocr2:3b",
+    "PaddleOCR-VL": "paddleocr-vl:1b",
 }
 
 NATIVE_OCR_MODELS = {"LightOnOCR-2-1B", "OlmOCR2"}
@@ -89,6 +91,18 @@ OCR this image to HTML.
 # serves one request at a time — concurrent calls 500 (engine retries absorb it).
 DEEPSEEK_OCR_PROMPT = "Convert the document to markdown."
 DOTS_OCR_PROMPT = "Extract the text content from this image."
+# PaddleOCR-VL (Baidu, ~0.9B NaViT+ERNIE) is a task-specific OCR fine-tune. Its
+# documented text-recognition trigger is the bare "OCR:" prompt (no system prompt,
+# image-first); it returns clean reading-order text/markdown directly, so no
+# html2md post-process. Verified against the gateway (paddleocr-vl:1b) 2026-06-07.
+# LIMITATION: "OCR:" is plain reading-order text only — tables come out flattened
+# (no pipe structure). PaddleOCR-VL's table/formula/chart prompts ("Table
+# Recognition:", etc.) are meant to run inside PaddleOCR's layout pipeline (detect
+# + crop region -> per-type prompt -> parse the OTSL <fcel>/<lcel>/<nl> tokens they
+# emit). We send whole pages in one call and have no OTSL parser, so those prompts
+# aren't usable here. For structured tables use a markdown-table VLM (Qwen/Gemma)
+# or an HTML fine-tune (dots/Nanonets -> html2md) instead.
+PADDLEOCR_PROMPT = "OCR:"
 NANONETS_OCR_PROMPT = (
     "Extract the text from the above document as if you were reading it naturally. "
     "Return the tables in html format. Return the equations in LaTeX representation. "
@@ -107,6 +121,7 @@ MODEL_PROMPTS = {
     "DeepSeek-OCR": DEEPSEEK_OCR_PROMPT,
     "dots-ocr": DOTS_OCR_PROMPT,
     "Nanonets-OCR2": NANONETS_OCR_PROMPT,
+    "PaddleOCR-VL": PADDLEOCR_PROMPT,
 }
 
 # Tuned general-VLM prompt for Qwen3.6-35B. With the default shared prompt the
@@ -194,8 +209,11 @@ MODEL_SAMPLING = {
     "DeepSeek-OCR": {"temperature": 0.0},
     "dots-ocr": {"temperature": 0.0},
     "Nanonets-OCR2": {"temperature": 0.0},
+    # Deterministic OCR fine-tune; run greedy like the other dedicated OCR models.
+    "PaddleOCR-VL": {"temperature": 0.0},
     # Gemma4 are thinking models on the llama.cpp gateway; disable thinking or they
     # spend the whole token budget on reasoning -> empty output / gateway 500s.
+    "Gemma4-12B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
     "Gemma4-26B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
     "Gemma4-31B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
     "Gemma4-E4B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},

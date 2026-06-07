@@ -17,6 +17,7 @@ DISPLAY_NAMES = {
     "Qwen35-122B-FS": "Qwen3.5-122B (no headers/footers)",
     "Qwen3.6-35B": "Qwen3.6-35B",
     "Qwen3.6-35B-FS": "Qwen3.6-35B (no headers/footers)",
+    "Gemma4-12B": "Gemma4-12B",
     "Gemma4-26B": "Gemma4-26B",
     "Gemma4-31B": "Gemma4-31B",
     "Gemma4-E4B": "Gemma4-E4B",
@@ -24,6 +25,7 @@ DISPLAY_NAMES = {
     "DeepSeek-OCR": "DeepSeek-OCR",
     "dots-ocr": "dots.ocr",
     "Nanonets-OCR2": "Nanonets-OCR2",
+    "PaddleOCR-VL": "PaddleOCR-VL",
 }
 
 
@@ -35,6 +37,7 @@ MODEL_PARAMS = {
     "Tesseract": 0,
     "Tesseract-FS": 0.1,
     "Docling": 0.5,
+    "PaddleOCR-VL": 0.9,
     "GLM-OCR": 1,
     "LightOnOCR-2-1B": 1.5,
     "dots-ocr": 2,
@@ -45,6 +48,7 @@ MODEL_PARAMS = {
     "OlmOCR2": 7,
     "Qwen35-9B": 9,
     "Qwen35-9B-FS": 9.1,
+    "Gemma4-12B": 12,
     "Gemma4-26B": 26,
     "Gemma4-31B": 31,
     "Qwen3.6-35B": 35,
