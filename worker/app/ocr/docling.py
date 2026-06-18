@@ -36,7 +36,17 @@ def ocr_docling(filepath: str, docling_url: str, use_vlm: bool = False) -> OcrRe
             data["vlm_pipeline_model_api"] = json.dumps({
                 "url": settings.docling_vlm_url,
                 "headers": {},
-                "params": {"model": settings.docling_vlm_model, "max_tokens": 16384},
+                "params": {
+                    "model": settings.docling_vlm_model,
+                    "max_tokens": 16384,
+                    # Break the repetition loop on dense pages with dotted leader
+                    # lines (e.g. IRS tax forms): without this the pool models
+                    # spew `. . . .` until they hit max_tokens, which surfaces
+                    # here as a partial_success -> "Docling conversion failed".
+                    # max_tokens alone does not fix it; frequency_penalty does.
+                    # Keep in sync with the qwen36 preset in docling-service.
+                    "frequency_penalty": 0.3,
+                },
                 "timeout": 300,
                 "concurrency": 4,
                 "prompt": (
