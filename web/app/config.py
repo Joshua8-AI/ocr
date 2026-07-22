@@ -26,6 +26,7 @@ DISPLAY_NAMES = {
     "dots-ocr": "dots.ocr",
     "Nanonets-OCR2": "Nanonets-OCR2",
     "PaddleOCR-VL": "PaddleOCR-VL",
+    "OvisOCR2": "OvisOCR2",
 }
 
 
@@ -37,6 +38,7 @@ MODEL_PARAMS = {
     "Tesseract": 0,
     "Tesseract-FS": 0.1,
     "Docling": 0.5,
+    "OvisOCR2": 0.8,
     "PaddleOCR-VL": 0.9,
     "GLM-OCR": 1,
     "LightOnOCR-2-1B": 1.5,

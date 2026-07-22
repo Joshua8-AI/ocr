@@ -52,6 +52,7 @@ MODEL_HF_IDS = {
     "dots-ocr": "dots-ocr:2b",
     "Nanonets-OCR2": "nanonets-ocr2:3b",
     "PaddleOCR-VL": "paddleocr-vl:1b",
+    "OvisOCR2": "ovisocr2:0.8b",
 }
 
 NATIVE_OCR_MODELS = {"LightOnOCR-2-1B", "OlmOCR2"}
@@ -103,6 +104,16 @@ DOTS_OCR_PROMPT = "Extract the text content from this image."
 # aren't usable here. For structured tables use a markdown-table VLM (Qwen/Gemma)
 # or an HTML fine-tune (dots/Nanonets -> html2md) instead.
 PADDLEOCR_PROMPT = "OCR:"
+# OvisOCR2 (AIDC-AI, ~0.8B) is a task-specific OCR fine-tune served by llama.cpp.
+# Image-first text prompt, no system prompt. Verified against the gateway
+# (ovisocr2:0.8b) 2026-07-21: the model IGNORES the prompt text — "OCR:" and
+# "Convert the document to markdown." returned byte-identical output on both a
+# dense-text and two table pages — so the value below is only a trigger, not a
+# tuning knob. It emits body text as markdown but tables as HTML
+# (`<table border=1>...`), so it needs the html2md post-process (see MODEL_POST).
+# NOTE: it also emits `<img src="images/bbox_...jpg"/>` placeholders for figures,
+# which html2md renders as dead `![](images/bbox_...)` links.
+OVISOCR_PROMPT = "OCR:"
 NANONETS_OCR_PROMPT = (
     "Extract the text from the above document as if you were reading it naturally. "
     "Return the tables in html format. Return the equations in LaTeX representation. "
@@ -122,6 +133,7 @@ MODEL_PROMPTS = {
     "dots-ocr": DOTS_OCR_PROMPT,
     "Nanonets-OCR2": NANONETS_OCR_PROMPT,
     "PaddleOCR-VL": PADDLEOCR_PROMPT,
+    "OvisOCR2": OVISOCR_PROMPT,
 }
 
 # Tuned general-VLM prompt for Qwen3.6-35B. With the default shared prompt the
@@ -209,8 +221,9 @@ MODEL_SAMPLING = {
     "DeepSeek-OCR": {"temperature": 0.0},
     "dots-ocr": {"temperature": 0.0},
     "Nanonets-OCR2": {"temperature": 0.0},
-    # Deterministic OCR fine-tune; run greedy like the other dedicated OCR models.
+    # Deterministic OCR fine-tunes; run greedy like the other dedicated OCR models.
     "PaddleOCR-VL": {"temperature": 0.0},
+    "OvisOCR2": {"temperature": 0.0},
     # Gemma4 are thinking models on the llama.cpp gateway; disable thinking or they
     # spend the whole token budget on reasoning -> empty output / gateway 500s.
     "Gemma4-12B": {"temperature": 0.0, "extra_body": {"chat_template_kwargs": {"enable_thinking": False}}},
@@ -224,6 +237,8 @@ MODEL_POST = {
     "Chandra": "html2md",
     "dots-ocr": "html2md",
     "Nanonets-OCR2": "html2md",
+    # Emits markdown body text but HTML tables — see OVISOCR_PROMPT.
+    "OvisOCR2": "html2md",
 }
 
 # Models that run locally without vLLM
