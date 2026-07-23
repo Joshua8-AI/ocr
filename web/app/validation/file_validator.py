@@ -79,12 +79,3 @@ def validate_magic_bytes(content: bytes, filename: str) -> str:
         )
 
     return detected
-
-
-def validate_file_size(size: int, max_mb: int) -> None:
-    """Validate file size."""
-    max_bytes = max_mb * 1024 * 1024
-    if size > max_bytes:
-        raise FileValidationError(
-            f"File size {size / 1024 / 1024:.1f}MB exceeds limit of {max_mb}MB"
-        )

@@ -23,7 +23,6 @@ from app.config import DISPLAY_NAMES, MODEL_PARAMS, settings
 from app.validation.file_validator import (
     FileValidationError,
     validate_file_extension,
-    validate_file_size,
     validate_magic_bytes,
 )
 from app.validation.sanitizer import sanitize_filename
@@ -128,10 +127,9 @@ async def upload_files(
             if not file.filename:
                 raise HTTPException(status_code=400, detail="File has no filename")
             content = await file.read()
-            try:
-                validate_file_size(len(content), settings.max_file_size_mb)
-            except FileValidationError as e:
-                raise HTTPException(status_code=413, detail=str(e))
+            # No server-side size limit: uploads are bounded in practice by
+            # Cloudflare's 100MB request-body cap on the tunnel. Direct LAN
+            # submissions are deliberately unrestricted.
             safe_name = sanitize_filename(file.filename)
             try:
                 validate_file_extension(safe_name)

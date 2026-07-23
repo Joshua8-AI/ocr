@@ -78,7 +78,6 @@ class Settings(BaseSettings):
     vllm_url: str = "http://vllm:8000/v1"
     app_base_url: str = "http://localhost:8200"
     data_dir: str = "/data"
-    max_file_size_mb: int = 100
     max_files_per_request: int = 20
     ocr_models: str = ""
 
