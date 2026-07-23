@@ -8,7 +8,16 @@ import uuid
 import httpx
 import redis
 from celery import Celery
-from fastapi import APIRouter, Cookie, Form, HTTPException, Query, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Cookie,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
 
 from app.api.schemas import (
     AppConfig,
@@ -63,8 +72,21 @@ def _get_stats(data: dict) -> ModelStats | None:
     return None
 
 
+# Cloudflare adds these to every request it proxies; their absence means the
+# client reached the origin directly (LAN or localhost), where no cap applies.
+CLOUDFLARE_HEADERS = ("cf-ray", "cf-connecting-ip")
+CLOUDFLARE_MAX_SUBMISSION_MB = 100
+
+
+def _submission_limit_mb(request: Request) -> int | None:
+    """Return the effective upload cap for this client, or None if unlimited."""
+    if any(h in request.headers for h in CLOUDFLARE_HEADERS):
+        return CLOUDFLARE_MAX_SUBMISSION_MB
+    return None
+
+
 @router.get("/config")
-async def get_config() -> AppConfig:
+async def get_config(request: Request) -> AppConfig:
     available = []
     for name, url in settings.available_models.items():
         if url == "local":
@@ -91,7 +113,7 @@ async def get_config() -> AppConfig:
             pass
     # Order the picker fast/small -> accurate/large (matches the UI scale)
     available.sort(key=lambda m: (MODEL_PARAMS.get(m.key, 999), m.key))
-    return AppConfig(models=available)
+    return AppConfig(models=available, max_submission_mb=_submission_limit_mb(request))
 
 
 @router.post("/upload", status_code=202)

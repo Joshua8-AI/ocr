@@ -18,6 +18,7 @@ const cancelBtn = document.getElementById("cancel-btn");
 const uploadProgress = document.getElementById("upload-progress");
 const uploadProgressBar = document.getElementById("upload-progress-bar");
 const uploadProgressText = document.getElementById("upload-progress-text");
+const sizeLimitNote = document.getElementById("size-limit-note");
 
 /* ── Init: load config ── */
 async function loadConfig() {
@@ -35,6 +36,12 @@ async function loadConfig() {
         : (modelKeys.includes(APP_DEFAULT)
             ? APP_DEFAULT
             : (modelKeys.find((k) => k !== "Tesseract") || modelKeys[0] || ""));
+
+    // The cap is a property of the route in, not the app, so state it only when
+    // this client is actually subject to it.
+    sizeLimitNote.textContent = appConfig.max_submission_mb
+        ? `Maximum ${appConfig.max_submission_mb}MB per submission`
+        : "No size limit on this connection";
 
     modelSelect.innerHTML = "";
     for (const m of appConfig.models) {
@@ -81,12 +88,15 @@ function renderFileList() {
 
 /* ── Upload ── */
 
-// Cloudflare's tunnel rejects request bodies over 100MB before they ever reach
-// the app, so there is no server-side cap to report — we check here to give a
-// precise message instead of letting the proxy return an opaque HTML error.
-const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024;
-
 let uploadXhr = null;
+
+// Only set when the server tells us this client is behind the Cloudflare tunnel,
+// whose free plan rejects bodies over 100MB before they ever reach the app.
+// Direct LAN/localhost access has no cap — the app imposes none of its own.
+function submissionLimitBytes() {
+    const mb = appConfig.max_submission_mb;
+    return mb ? mb * 1024 * 1024 : null;
+}
 
 submitBtn.addEventListener("click", submitUpload);
 cancelBtn.addEventListener("click", () => { if (uploadXhr) uploadXhr.abort(); });
@@ -99,10 +109,13 @@ function submitUpload() {
     if (models.length === 0) return showError("Please select at least one model.");
 
     const totalBytes = selectedFiles.reduce((n, f) => n + f.size, 0);
-    if (totalBytes > MAX_SUBMISSION_BYTES) {
+    const limit = submissionLimitBytes();
+    if (limit && totalBytes > limit) {
         return showError(
-            `This submission is ${formatSize(totalBytes)}, which is over the 100MB limit. ` +
-            `Submit fewer files at a time — the limit applies to the whole submission, not per file.`
+            `This submission is ${formatSize(totalBytes)}, which is over the ` +
+            `${appConfig.max_submission_mb}MB limit imposed by the Cloudflare tunnel. ` +
+            `Submit fewer files at a time — the limit applies to the whole submission, ` +
+            `not per file. Submitting from the local network has no size limit.`
         );
     }
 
@@ -196,8 +209,11 @@ function describeUploadFailure(xhr) {
     if (detail) return detail;
 
     if (xhr.status === 413) {
-        return "Submission rejected as too large. The 100MB limit is enforced by Cloudflare " +
-               "before the files reach the server — submit fewer files at a time.";
+        return appConfig.max_submission_mb
+            ? `Submission rejected as too large. The ${appConfig.max_submission_mb}MB limit is ` +
+              `enforced by the Cloudflare tunnel before the files reach the server — submit ` +
+              `fewer files at a time, or submit from the local network, which has no limit.`
+            : "Submission rejected as too large by a proxy in front of the app.";
     }
     if (xhr.status === 502 || xhr.status === 503 || xhr.status === 504) {
         return `The server is unreachable or restarting (HTTP ${xhr.status}). Try again shortly.`;

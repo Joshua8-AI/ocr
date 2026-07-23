@@ -18,6 +18,10 @@ class ModelInfo(BaseModel):
 
 class AppConfig(BaseModel):
     models: list[ModelInfo]
+    # 100 when the client reached us through the Cloudflare tunnel (whose free
+    # plan caps request bodies at 100MB), None for direct LAN/localhost access
+    # where no size limit applies. The app itself imposes no cap.
+    max_submission_mb: int | None = None
 
 
 class UploadResponse(BaseModel):
