@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR Web App</title>
-    <link rel="stylesheet" href="/static/style.css?v=7">
+    <link rel="stylesheet" href="/static/style.css?v=8">
 </head>
 <body>
 <div class="container">
@@ -50,8 +50,15 @@
         </div>
 
         <ul class="file-list" id="file-list"></ul>
+
+        <div class="upload-progress hidden" id="upload-progress">
+            <div class="progress-bar-wrap"><div class="progress-bar" id="upload-progress-bar" style="width: 0%"></div></div>
+            <p class="progress-text" id="upload-progress-text"></p>
+        </div>
+
         <p class="error-msg hidden" id="upload-error"></p>
         <button class="btn btn-primary" id="submit-btn" disabled>Submit for OCR</button>
+        <button class="btn btn-danger hidden" id="cancel-btn">Cancel upload</button>
     </div>
 
     <div id="active-jobs"></div>
@@ -234,6 +241,6 @@
         <p class="bench-note">Benchmark: <a href="https://huggingface.co/datasets/allenai/olmOCR-bench" target="_blank" rel="noopener">OlmOCR-Bench</a>, app-faithful run on a 150-document stratified sample (791 tests), 95% CI ±~3%. Columns: <em>Tables</em> = table tests; <em>Text</em> = mean of dense/multi-column/old-scan reading; <em>Math</em> = mean of arXiv &amp; old-scan math. <em>sec/page</em> is median per-page latency (GPU models under load on the shared gateway; Tesseract single-stream on CPU). Qwen3.6-35B, Qwen35-9B, and Qwen35-122B use per-model tuned prompts. &Dagger;Qwen3.6-35B-FS is Qwen3.6-35B with running headers/footers removed via Docling layout detection (a ~2s/doc post-process); it keeps identical tables/math while lifting clean-text accuracy. <strong>*Time measured on legacy Pascal-generation GPUs</strong> (markedly slower); unmarked times are on current Blackwell GPUs (Tesseract on CPU). &dagger;Gemma4-26B/-31B are reasoning models; they must be run with thinking disabled (otherwise they exhaust the token budget and return empty pages). Scored single-stream (parallelism 1) on Pascal; the ~time/page shown is the estimated single-stream service time.</p>
     </div>
 </div>
-<script src="/static/app.js?v=10"></script>
+<script src="/static/app.js?v=11"></script>
 </body>
 </html>

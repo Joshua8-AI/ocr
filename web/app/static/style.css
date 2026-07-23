@@ -260,9 +260,41 @@ input:focus, select:focus {
     transition: width 0.3s;
 }
 
+/* Work is happening but page-level progress isn't known yet — e.g. Docling
+   parsing an 800-page PDF before the first page is emitted. A frozen 0% bar
+   reads as "stuck", so sweep instead. */
+.progress-bar.indeterminate {
+    background-image: linear-gradient(90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: indeterminate-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes indeterminate-sweep {
+    from { background-position: -60% 0; }
+    to   { background-position: 160% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .progress-bar.indeterminate { animation: none; }
+    .progress-bar { transition: none; }
+}
+
 .progress-text {
     font-size: 0.8rem;
     color: var(--text-dim);
+}
+
+/* Upload progress (distinct from per-job processing progress) */
+.upload-progress {
+    margin: 0.75rem 0;
+}
+
+#cancel-btn {
+    margin-left: 0.5rem;
 }
 
 /* Download links */
