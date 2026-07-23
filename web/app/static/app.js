@@ -43,11 +43,19 @@ async function loadConfig() {
         ? `Maximum ${appConfig.max_submission_mb}MB per submission`
         : "No size limit on this connection";
 
+    // Label whichever option is actually preselected. Tagging APP_DEFAULT
+    // unconditionally meant that when a remembered choice won, the option marked
+    // "(default)" was not the selected one — which reads as "the default is
+    // selected" and hid an unintended model behind a similar name.
+    const usingRemembered = defaultModel !== APP_DEFAULT && defaultModel === lastModel;
     modelSelect.innerHTML = "";
     for (const m of appConfig.models) {
         const opt = document.createElement("option");
         opt.value = m.key;
-        opt.textContent = m.display + (m.key === APP_DEFAULT ? " (default)" : "");
+        let suffix = "";
+        if (m.key === defaultModel) suffix = usingRemembered ? " (last used)" : " (default)";
+        else if (m.key === APP_DEFAULT) suffix = " (default)";
+        opt.textContent = m.display + suffix;
         if (m.key === defaultModel) opt.selected = true;
         modelSelect.appendChild(opt);
     }
@@ -139,7 +147,7 @@ function submitUpload() {
     // Body fully sent, but the server is still saving and validating it. For large
     // PDFs this gap is seconds-to-minutes, so say so rather than sitting at 100%.
     xhr.upload.addEventListener("load", () => {
-        uploadProgressBar.style.width = "100%";
+        uploadProgressBar.style.width = "";  // sized by .indeterminate
         uploadProgressBar.classList.add("indeterminate");
         uploadProgressText.textContent = "Upload complete — validating and queueing...";
     });
@@ -327,10 +335,11 @@ function updateSubcard(jobId, job, token) {
             // still being parsed/laid out. On an 800-page manual that stage alone runs
             // for minutes, so show motion rather than a bar frozen at 0%.
             bar.classList.add("indeterminate");
-            bar.style.width = "100%";
+            bar.style.width = "";  // let .indeterminate size the sliding segment
             text.textContent = pages > 0
-                ? `${filePrefix}Preparing ${name} — ${pages} pages detected, starting OCR...${elapsedSuffix(jobId)}`
-                : `${filePrefix}Preparing ${name}...${elapsedSuffix(jobId)}`;
+                ? `${filePrefix}Analyzing layout of ${name} — ${pages} pages found. ` +
+                  `OCR has not started yet (page 0 of ${pages})${elapsedSuffix(jobId)}`
+                : `${filePrefix}Analyzing ${name} — OCR has not started yet${elapsedSuffix(jobId)}`;
         }
     } else if (job.status === "completed") {
         bar.classList.remove("indeterminate");
